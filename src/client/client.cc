@@ -464,7 +464,7 @@ Connection::handleResponsePacket(const char* buffer, size_t bytes) {
     parser_.feed(buffer, bytes);
     if (parser_.parse() == Private::State::Done) {
         auto req = std::move(inflightRequests.front());
-        inflightRequests.pop_back();
+        inflightRequests.pop_front();
 
         if (req.timer) {
             req.timer->disarm();
@@ -480,6 +480,8 @@ Connection::handleResponsePacket(const char* buffer, size_t bytes) {
 void
 Connection::handleError(const char* error) {
     auto req = std::move(inflightRequests.front());
+    inflightRequests.pop_front();
+
     if (req.timer) {
         req.timer->disarm();
         timerPool_.releaseTimer(req.timer);
@@ -492,7 +494,7 @@ Connection::handleError(const char* error) {
 void
 Connection::handleTimeout() {
     auto req = std::move(inflightRequests.front());
-    inflightRequests.pop_back();
+    inflightRequests.pop_front();
 
     timerPool_.releaseTimer(req.timer);
     req.onDone();
